@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String @unique
+  name     String
+  surname  String
+  password String
+
+  role     Role      @default(CUSTOMER)
+  wallet   Wallet?
+  status   Status    @default(ACTIVE)
+  contact  Contact?
+  settings Settings?
+
+  branchId Int?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  companyId Int?
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  campaigns         Campaign[]
+  favoritesBranches FavoriteBranch[]
+  favoritesProducts FavoriteProduct[]
+
+  createdAt DateTime @default(now())
+}
+
+model Settings {
+  id    Int   @id @default(autoincrement())
+  theme Theme @default(LIGHT)
+
+  currentBranchId Int?
+  currentBranch   Branch? @relation(fields: [currentBranchId], references: [id])
+
+  currentCompanyId Int?
+  currentCompany   Company? @relation(fields: [currentCompanyId], references: [id])
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Contact {
+  id      Int     @id @default(autoincrement())
+  address String?
+  email   String
+  phone   String
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  companyId Int?     @unique
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  branchId Int?    @unique
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id      Int      @id @default(autoincrement())
+  name    String
+  status  Status
+  file    File?
+  contact Contact?
+
+  bracnhes  Branch[]
+  employees User[]
+  campaigns Campaign[]
+  Settings  Settings[] // bak bu olmaz
+}
+
+model Branch {
+  id      Int      @id @default(autoincrement())
+  name    String
+  mapcode String
+  status  Status
+  contact Contact?
+  file    File?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id])
+
+  employees User[]
+  campaigns Campaign[]
+  favorites FavoriteBranch[]
+  products  Product[]
+  sales     Sale[]
+  settings  Settings[] // bak bu olmaz
+}
+
+model ProductType {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  products  Product[]
+  campaigns Campaign[]
+}
+
+model Product {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  image       File?
+  status      Status
+
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  productTypeId Int?
+  productType   ProductType? @relation(fields: [productTypeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  favoriteProducts FavoriteProduct[]
+  campaigns        Campaign[]
+  SaleOnProduct    SalesOnProducts[]
+}
+
+model Wallet {
+  id      Int   @id @default(autoincrement())
+  balance Float
+  points  Float
+
+  creditCard CreditCard?
+  createdAt  DateTime    @default(now())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  sales Sale[]
+}
+
+model CreditCard {
+  id        Int      @id @default(autoincrement())
+  name      String
+  number    String
+  cvc       String
+  expMonth  String
+  expYear   String
+  createdAt DateTime @default(now())
+
+  walletId Int    @unique
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+}
+
+model Sale {
+  id        Int      @id @default(autoincrement())
+  status    Status
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+
+  walletId Int
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  SaleOnProduct SalesOnProducts[]
+}
+
+model Campaign {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+
+  image  File?
+  status Status
+
+  companyId Int?
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  branchId Int?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  productTypeId Int?
+  productType   ProductType? @relation(fields: [productTypeId], references: [id])
+
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+}
+
+model File {
+  id   Int    @id @default(autoincrement())
+  name String
+  size Int
+  type String
+  url  String
+
+  branchId Int?    @unique
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  companyId Int?     @unique
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  campaignId Int?      @unique
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
+  productId Int?     @unique
+  product   Product? @relation(fields: [productId], references: [id])
+}
+
+model FavoriteBranch {
+  id     Int    @id @default(autoincrement())
+  status Status
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  branchId Int?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model FavoriteProduct {
+  id     Int    @id @default(autoincrement())
+  status Status
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model SalesOnProducts {
+  id     Int    @id @default(autoincrement())
+  status Status
+
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  saleId Int?
+  sale   Sale? @relation(fields: [saleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+enum Status {
+  ACTIVE
+  PASSIVE
+  PENDING
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  COMPANY_ADMIN
+  COMPANY_EMPLOYEE
+  BRANCH_ADMIN
+  BRANCH_EMPLOYEE
+}
+
+enum Theme {
+  LIGHT
+  DARK
+}
